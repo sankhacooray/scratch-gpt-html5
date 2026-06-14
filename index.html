@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scratch GPT</title>
+  <meta name="description" content="Describe a program in plain English and get a valid Scratch (.sb3) project. Invite-only." />
+  <meta name="theme-color" content="#4c97ff" />
+  <link rel="icon" href="https://scratch.mit.edu/favicon.ico" />
+  <!-- Social preview -->
+  <meta property="og:title" content="Scratch GPT" />
+  <meta property="og:description" content="Describe a program → get a valid Scratch .sb3. Invite-only." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://scratchgpt.sankhacooray.com/" />
+  <meta name="twitter:card" content="summary" />
+  <style>
+    :root { --blue: #4c97ff; --ink: #575e75; --bg: #e8f1fc; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body { background: var(--bg); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; color: var(--ink); }
+
+    /* The embedded Apps Script app fills the viewport. */
+    #app { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: var(--bg); }
+
+    /* Gate overlay: shown until the iframe reports a successful load. If the app
+       can't render in an iframe (visitor not signed into Google), this stays up
+       with a button that opens the app top-level, where Google login works. */
+    #gate { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px;
+      background: var(--bg); transition: opacity 0.3s; }
+    #gate.hidden { opacity: 0; pointer-events: none; }
+    .card { max-width: 420px; text-align: center; background: #fff; border: 1px solid #d9e3f2;
+      border-radius: 16px; padding: 28px 26px; box-shadow: 0 8px 30px rgba(76,151,255,0.18); }
+    .card img { width: 56px; height: 56px; }
+    h1 { margin: 12px 0 4px; font-size: 22px; color: var(--ink); }
+    h1 .gpt { color: #ffab19; }
+    .sub { margin: 0 0 18px; color: #8a93a8; font-size: 13.5px; }
+    .btn { display: inline-block; background: var(--blue); color: #fff; text-decoration: none; font-weight: 700;
+      padding: 11px 20px; border-radius: 10px; font-size: 15px; }
+    .btn:hover { filter: brightness(1.06); }
+    .spinner { width: 22px; height: 22px; margin: 6px auto 14px; border: 3px solid #cfe0fb; border-right-color: var(--blue);
+      border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .note { margin-top: 14px; font-size: 12px; color: #9aa6c2; }
+    .loading-only .ready { display: none; }
+    .ready-only .loading { display: none; }
+  </style>
+</head>
+<body>
+  <!-- Embedded gated app. Sign-in + allowlist are enforced inside (Apps Script). -->
+  <iframe id="app"
+    src="https://script.google.com/macros/s/AKfycbxwBKa62yQ58fSd9s2aJ62uQQqhLrB0RSDspCk0SU5TFpveb1qZTcxThcJxEWmYgott/exec"
+    title="Scratch GPT"></iframe>
+
+  <div id="gate" class="loading-only">
+    <div class="card">
+      <img src="https://scratch.mit.edu/favicon.ico" alt="Scratch" />
+      <h1>Scratch <span class="gpt">GPT</span></h1>
+      <div class="loading">
+        <div class="spinner"></div>
+        <p class="sub">Opening the app…</p>
+      </div>
+      <div class="ready">
+        <p class="sub">Invite-only. Sign in with an allowlisted Google account.</p>
+      </div>
+      <a class="btn" id="openTab"
+        href="https://script.google.com/macros/s/AKfycbxwBKa62yQ58fSd9s2aJ62uQQqhLrB0RSDspCk0SU5TFpveb1qZTcxThcJxEWmYgott/exec"
+        target="_blank" rel="noopener">Open Scratch GPT</a>
+      <p class="note">If the app stays blank (you're not signed into Google, or third-party cookies are blocked), use the button above to open it in a new tab.</p>
+    </div>
+  </div>
+
+  <script>
+    var gate = document.getElementById('gate');
+    var app = document.getElementById('app');
+    // If the iframe successfully renders the app, drop the overlay.
+    app.addEventListener('load', function () {
+      gate.classList.add('hidden');
+    });
+    // If it hasn't loaded shortly (login blocked in-frame), switch the overlay
+    // copy from "loading" to the invite/launch message — the button is already there.
+    setTimeout(function () {
+      if (!gate.classList.contains('hidden')) {
+        gate.classList.remove('loading-only');
+        gate.classList.add('ready-only');
+      }
+    }, 3000);
+  </script>
+</body>
+</html>
