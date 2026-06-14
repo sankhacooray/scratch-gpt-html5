@@ -1,0 +1,13 @@
+{
+  "name": "scratch-gpt-html5",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Scratch GPT — generate valid Scratch 3 (.sb3) projects from plain English. UI source (bundled into the Apps Script app) + public iframe wrapper for GitHub Pages.",
+  "scripts": {
+    "test": "node tools/selftest.mjs",
+    "serve": "python3 -m http.server 4825",
+    "build:appscript": "node tools/build-appscript.mjs",
+    "deploy:pages": "python3 deploy.py"
+  }
+}

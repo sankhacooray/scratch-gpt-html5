@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scratch GPT</title>
+  <script>
+    // Apply saved theme before paint (light by default, like Scratch) to avoid a flash.
+    try { if (localStorage.getItem('scratch-gpt:theme') === 'dark') document.documentElement.classList.add('dark'); } catch (e) {}
+  </script>
+  <link rel="icon" href="https://scratch.mit.edu/favicon.ico" />
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    /* Light theme — Scratch website palette (default, matches scratch.mit.edu) */
+    :root {
+      --bg: #e8f1fc;          /* Scratch light-blue page background */
+      --panel: #ffffff;       /* white cards */
+      --ink: #575e75;         /* Scratch grey-blue text */
+      --muted: #8a93a8;
+      --accent: #ffab19;      /* Scratch orange */
+      --accent2: #4c97ff;     /* Scratch blue */
+      --ok: #4cbf56;          /* Scratch green */
+      --bad: #ff6680;         /* Scratch coral */
+      --warn: #cf8b17;
+      --line: #d9e3f2;
+      --input-bg: #f2f7fe;
+      --alt-bg: #e6edf8;
+      --alt-ink: #575e75;
+      --bar-bg: #4c97ff;      /* iconic Scratch blue top bar */
+      --bar-ink: #ffffff;
+      --code-bg: #eef3fb;
+      --gutter-bg: #e9f1fc;
+      --zebra-a: #f6f9ff;
+      --zebra-b: #e8f1fc;
+      --shadow: 0 1px 3px rgba(76, 151, 255, 0.18);
+    }
+    /* Dark theme — built from the same Scratch palette on a navy base */
+    html.dark {
+      --bg: #141d33;
+      --panel: #1e2a47;
+      --ink: #eef2fb;
+      --muted: #9aa6c2;
+      --accent: #ffab19;
+      --accent2: #4c97ff;
+      --ok: #4cbf56;
+      --bad: #ff6680;
+      --warn: #ffc04d;
+      --line: #2f3e5e;
+      --input-bg: #131c30;
+      --alt-bg: #2f3e5e;
+      --alt-ink: #eef2fb;
+      --bar-bg: #11192c;
+      --bar-ink: #eef2fb;
+      --code-bg: #131c30;
+      --gutter-bg: #16223a;
+      --zebra-a: #131c30;
+      --zebra-b: #18233c;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg); color: var(--ink); transition: background 0.2s, color 0.2s; }
+    header { padding: 14px 24px; background: var(--bar-bg); color: var(--bar-ink);
+      display: flex; align-items: center; gap: 12px; }
+    header h1 { margin: 0; font-size: 20px; display: flex; align-items: baseline; gap: 6px; }
+    header h1 .gpt { color: var(--accent); }
+    header .tag { color: var(--bar-ink); opacity: 0.85; font-size: 13px; }
+    header .tag code { background: rgba(0,0,0,0.22); color: var(--bar-ink); }
+    header .spacer { flex: 1; }
+    .bar-btn { display: inline-flex; align-items: center; gap: 7px; background: rgba(255,255,255,0.16);
+      color: var(--bar-ink); border: 1px solid rgba(255,255,255,0.32); border-radius: 8px;
+      padding: 7px 12px; font-weight: 600; font-size: 13px; cursor: pointer; text-decoration: none; }
+    .bar-btn:hover { background: rgba(255,255,255,0.28); }
+    .bar-btn img { width: 18px; height: 18px; display: block; }
+    .bar-btn.icon-only { padding: 7px 10px; }
+    .user-chip { display: inline-flex; align-items: center; gap: 7px; color: var(--bar-ink); font-size: 13px; font-weight: 600;
+      background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.32); border-radius: 999px; padding: 5px 12px; }
+    .user-chip[hidden] { display: none; }
+    .user-chip span { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    main { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px 24px; }
+    .col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; box-shadow: var(--shadow); }
+    .card.fill { flex: 1; display: flex; flex-direction: column; }
+    label { display: block; font-weight: 600; margin-bottom: 6px; }
+    .hint { color: var(--muted); font-size: 12px; margin: 0 0 8px; }
+    textarea { width: 100%; background: var(--input-bg); color: var(--ink); border: 1px solid var(--line);
+      border-radius: 8px; padding: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; resize: vertical; }
+    /* Describe panel grows to fill the column; example chips float at its bottom */
+    .desc-wrap { position: relative; flex: 1; display: flex; min-height: 180px; }
+    #desc { flex: 1; height: 100%; resize: none; padding-bottom: 46px; }
+    .chips.floating { position: absolute; left: 10px; bottom: 10px; align-items: center;
+      padding: 6px 8px; border-radius: 9px; background: var(--panel); border: 1px solid var(--line);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+    .chips-label { color: var(--muted); font-size: 12px; font-weight: 600; align-self: center; }
+    /* Code editor with a line-number gutter and zebra-striped rows */
+    .editor { display: flex; height: 420px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--input-bg);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+    .editor .gutter { flex: 0 0 auto; min-width: 42px; overflow: hidden; text-align: right; color: var(--muted);
+      background: var(--gutter-bg); border-right: 1px solid var(--line); user-select: none; }
+    .editor .gutter div { line-height: 20px; padding: 0 8px 0 6px; }
+    .editor .gutter div:nth-child(odd) { background: var(--zebra-a); }
+    .editor .gutter div:nth-child(even) { background: var(--zebra-b); }
+    .editor #ir { flex: 1; min-width: 0; height: 100%; border: 0; border-radius: 0; resize: none; padding: 0 10px;
+      line-height: 20px; white-space: pre; overflow: auto; tab-size: 2;
+      background-color: var(--input-bg);
+      background-image: repeating-linear-gradient(var(--zebra-a) 0 20px, var(--zebra-b) 20px 40px);
+      background-attachment: local; }
+    .editor #ir:focus { outline: none; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    button { display: inline-flex; align-items: center; gap: 7px; background: var(--accent2); color: white; border: 0;
+      border-radius: 8px; padding: 9px 14px; font-weight: 600; cursor: pointer; font-size: 13px; }
+    button.alt { background: var(--alt-bg); color: var(--alt-ink); }
+    button.primary { background: var(--accent); color: #21232b; }
+    button:hover { filter: brightness(1.06); }
+    button:disabled { opacity: 0.6; cursor: default; }
+    #report { font-family: ui-monospace, monospace; font-size: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+    #report .ok { color: var(--ok); font-weight: 700; }
+    #report .bad { color: var(--bad); } #report .warn { color: var(--warn); }
+    #report i { margin-right: 5px; }
+    details summary { cursor: pointer; font-weight: 600; }
+    select, input[type=text], input[type=password] { background: var(--input-bg); color: var(--ink);
+      border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; font-size: 13px; }
+    .field { margin-bottom: 10px; }
+    .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .chips button { background: var(--alt-bg); color: var(--alt-ink); font-weight: 500; padding: 5px 10px; font-size: 12px; }
+    code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+    /* Settings modal */
+    .modal[hidden] { display: none; }
+    .modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .modal-backdrop { position: absolute; inset: 0; background: rgba(20, 29, 51, 0.5); }
+    .modal-box { position: relative; width: 100%; max-width: 440px; background: var(--panel); color: var(--ink);
+      border: 1px solid var(--line); border-radius: 12px; padding: 18px; box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+    .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .modal-head h2 { margin: 0; font-size: 17px; }
+    .modal-x { background: var(--alt-bg); color: var(--alt-ink); padding: 6px 10px; }
+    @media (max-width: 860px) { main { grid-template-columns: 1fr; } header .tag { display: none; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Scratch <span class="gpt">GPT</span></h1>
+    <span class="tag">Describe a program &rarr; get a valid <code>.sb3</code> you can open in Scratch</span>
+    <span class="spacer"></span>
+    <span id="userChip" class="user-chip" hidden>
+      <i class="fa-solid fa-circle-user"></i><span id="userEmail"></span>
+    </span>
+    <a class="bar-btn" href="https://scratch.mit.edu/projects/editor/" target="_blank" rel="noopener" title="Open the Scratch editor">
+      <img src="https://scratch.mit.edu/favicon.ico" alt="Scratch" />
+      <span>Open Scratch</span>
+    </a>
+    <button id="btnSettings" class="bar-btn icon-only" title="Settings (API key)" aria-label="Settings">
+      <i class="fa-solid fa-gear"></i>
+    </button>
+    <button id="btnTheme" class="bar-btn icon-only" title="Toggle light / dark theme" aria-label="Toggle theme">
+      <i class="fa-solid fa-moon"></i>
+    </button>
+  </header>
+
+  <main>
+    <div class="col">
+      <div class="card fill">
+        <label for="desc">Describe your program</label>
+        <p class="hint">Plain English. Generating uses the team's server (Google sign-in required). On localhost, edit the IR on the right by hand.</p>
+        <div class="desc-wrap">
+          <textarea id="desc" placeholder="e.g. A cat that walks across the stage, bounces off the edges, and meows when you click it."></textarea>
+          <div class="chips floating">
+            <span class="chips-label">Examples</span>
+            <button id="exDance"><i class="fa-solid fa-shoe-prints"></i> Dancing sprite</button>
+            <button id="exQuiz"><i class="fa-solid fa-circle-question"></i> Math quiz</button>
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button id="btnGenerate" class="primary"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate IR</button>
+          <span class="hint" style="margin:0">uses your configured AI provider</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="card">
+        <label for="ir">IR (intermediate representation)</label>
+        <p class="hint">The deterministic compiler turns this into a valid Scratch project. Edit freely — it validates as you type.</p>
+        <div class="editor">
+          <div class="gutter" id="gutter" aria-hidden="true"></div>
+          <textarea id="ir" spellcheck="false" wrap="off"></textarea>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button id="btnBuild" class="primary"><i class="fa-solid fa-download"></i> Build &amp; Download .sb3</button>
+          <div id="report"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="settingsModal" class="modal" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-box" role="dialog" aria-modal="true" aria-label="Settings">
+      <div class="modal-head">
+        <h2><i class="fa-solid fa-gear"></i> Settings</h2>
+        <button class="modal-x" data-close aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="field">
+        <label for="provider">Provider</label>
+        <select id="provider">
+          <option value="">Auto (Anthropic preferred)</option>
+          <option value="anthropic">Anthropic</option>
+          <option value="openai">OpenAI</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="model">Model (optional)</label>
+        <input type="text" id="model" placeholder="e.g. gpt-4o or claude-sonnet-4-6" style="width:100%" />
+        <p class="hint" style="margin:6px 0 0">Model applies only when you pick a specific provider above. On Auto, the server uses its defaults and falls back if a provider is unavailable.</p>
+      </div>
+      <button id="saveSettings" class="primary"><i class="fa-solid fa-floppy-disk"></i> Save settings</button>
+      <p class="hint" style="margin-top:10px"><i class="fa-solid fa-lock"></i> API keys live in the Apps Script Script Properties, never in your browser. Access is gated by Google sign-in + an allowlist on the server.</p>
+    </div>
+  </div>
+
+  <script>
+    // Theme toggle: light by default (matches Scratch). Choice persists in localStorage.
+    (function () {
+      var KEY = 'scratch-gpt:theme';
+      var root = document.documentElement;
+      function syncIcon() {
+        var icon = document.querySelector('#btnTheme i');
+        if (icon) icon.className = root.classList.contains('dark') ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+      }
+      syncIcon();
+      document.getElementById('btnTheme').addEventListener('click', function () {
+        var dark = !root.classList.contains('dark');
+        root.classList.toggle('dark', dark);
+        try { localStorage.setItem(KEY, dark ? 'dark' : 'light'); } catch (e) {}
+        syncIcon();
+      });
+    })();
+  </script>
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>

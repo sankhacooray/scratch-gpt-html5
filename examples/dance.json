@@ -1,0 +1,22 @@
+{
+  "variables": { "steps": 0 },
+  "sprites": [
+    {
+      "name": "Dancer",
+      "x": 0,
+      "y": 0,
+      "scripts": [
+        [
+          { "op": "event_whenflagclicked" },
+          { "op": "control_forever", "body": [
+            { "op": "motion_movesteps", "inputs": { "STEPS": 10 } },
+            { "op": "motion_ifonedgebounce" },
+            { "op": "looks_nextcostume" },
+            { "op": "control_wait", "inputs": { "DURATION": 0.2 } },
+            { "op": "data_changevariableby", "fields": { "VARIABLE": "steps" }, "inputs": { "VALUE": 1 } }
+          ] }
+        ]
+      ]
+    }
+  ]
+}
