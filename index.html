@@ -4,12 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Scratch GPT</title>
-  <meta name="description" content="Describe a program in plain English and get a valid Scratch (.sb3) project. Invite-only." />
+  <meta name="description" content="Describe a program in plain English and get a valid Scratch (.sb3) project. Free demo — sign in with any Google account." />
   <meta name="theme-color" content="#4c97ff" />
   <link rel="icon" href="https://scratch.mit.edu/favicon.ico" />
   <!-- Social preview -->
   <meta property="og:title" content="Scratch GPT" />
-  <meta property="og:description" content="Describe a program → get a valid Scratch .sb3. Invite-only." />
+  <meta property="og:description" content="Describe a program → get a valid Scratch .sb3. Free demo — sign in with any Google account." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://scratchgpt.sankhacooray.com/" />
   <meta name="twitter:card" content="summary" />
@@ -60,7 +60,7 @@
         <p class="sub">Opening the app…</p>
       </div>
       <div class="ready">
-        <p class="sub">Invite-only. Sign in with an allowlisted Google account.</p>
+        <p class="sub">Sign in with any Google account to try the demo.</p>
       </div>
       <a class="btn" id="openTab"
         href="https://script.google.com/macros/s/AKfycbxwBKa62yQ58fSd9s2aJ62uQQqhLrB0RSDspCk0SU5TFpveb1qZTcxThcJxEWmYgott/exec"
@@ -71,19 +71,25 @@
 
   <script>
     var gate = document.getElementById('gate');
-    var app = document.getElementById('app');
-    // If the iframe successfully renders the app, drop the overlay.
-    app.addEventListener('load', function () {
-      gate.classList.add('hidden');
+    // Drop the overlay ONLY when the embedded app posts its "ready" signal.
+    // We can't use the iframe's `load` event: it also fires for Google's
+    // sign-in / authorization pages (which refuse to be framed), and would
+    // hide the overlay over a blank frame for not-yet-authorized visitors.
+    window.addEventListener('message', function (e) {
+      var d = e.data;
+      if (d && d.source === 'scratch-gpt' && d.type === 'ready') {
+        gate.classList.add('hidden');
+      }
     });
-    // If it hasn't loaded shortly (login blocked in-frame), switch the overlay
-    // copy from "loading" to the invite/launch message — the button is already there.
+    // If no "ready" arrives shortly (sign-in/authorization needed, which can't
+    // happen in-frame), switch the overlay copy to the launch message — the
+    // "Open Scratch GPT" button opens the app top-level, where Google login works.
     setTimeout(function () {
       if (!gate.classList.contains('hidden')) {
         gate.classList.remove('loading-only');
         gate.classList.add('ready-only');
       }
-    }, 3000);
+    }, 6000);
   </script>
 </body>
 </html>
