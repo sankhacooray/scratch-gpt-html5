@@ -67,6 +67,9 @@
       display: flex; align-items: center; gap: 12px; }
     header h1 { margin: 0; font-size: 20px; display: flex; align-items: baseline; gap: 6px; }
     header h1 .gpt { color: var(--accent); }
+    header h1 .demo { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+      color: #21232b; background: var(--accent); border-radius: 999px; padding: 2px 9px; align-self: center; }
+    header h1 .demo[hidden] { display: none; }
     header .tag { color: var(--bar-ink); opacity: 0.85; font-size: 13px; }
     header .tag code { background: rgba(0,0,0,0.22); color: var(--bar-ink); }
     header .spacer { flex: 1; }
@@ -141,7 +144,7 @@
 </head>
 <body>
   <header>
-    <h1>Scratch <span class="gpt">GPT</span></h1>
+    <h1>Scratch <span class="gpt">GPT</span> <span id="demoBadge" class="demo" hidden>demo</span></h1>
     <span class="tag">Describe a program &rarr; get a valid <code>.sb3</code> you can open in Scratch</span>
     <span class="spacer"></span>
     <span id="userChip" class="user-chip" hidden>
@@ -216,7 +219,7 @@
         <p class="hint" style="margin:6px 0 0">Model applies only when you pick a specific provider above. On Auto, the server uses its defaults and falls back if a provider is unavailable.</p>
       </div>
       <button id="saveSettings" class="primary"><i class="fa-solid fa-floppy-disk"></i> Save settings</button>
-      <p class="hint" style="margin-top:10px"><i class="fa-solid fa-lock"></i> API keys live in the Apps Script Script Properties, never in your browser. Access is gated by Google sign-in + an allowlist on the server.</p>
+      <p class="hint" style="margin-top:10px"><i class="fa-solid fa-lock"></i> API keys live in the Apps Script Script Properties, never in your browser. Sign in with any Google account to try the demo; admins get unlimited use.</p>
     </div>
   </div>
 
