@@ -9,6 +9,7 @@ const EXAMPLES = {
   dance: {
     prompt: 'A ballerina on a theater stage that dances across the stage forever, bounces off the edges, switches between her dance poses, and counts how many steps she has taken.',
     ir: {
+      name: 'dancing-ballerina-stage',
       variables: { steps: 0 },
       backdrops: ['Theater'],
       sprites: [{
@@ -31,6 +32,7 @@ const EXAMPLES = {
   quiz: {
     prompt: 'A math quiz where the cat asks "What is 2 + 2?", adds a point to the score for a correct answer and says "Correct!", otherwise says "Try again!".',
     ir: {
+      name: 'math-quiz-cat',
       variables: { score: 0 },
       sprites: [{
         name: 'Cat',
@@ -99,6 +101,16 @@ function validate() {
   return result;
 }
 
+// Turn the IR's name into a safe .sb3 file name: lowercase, hyphen-separated,
+// alphanumerics only. Falls back to a default if the name is missing/empty.
+function fileNameFor(ir) {
+  const slug = String(ir.name || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return (slug || 'scratch-gpt-project') + '.sb3';
+}
+
 function download() {
   const result = validate();
   if (!result || !result.report.ok) return;
@@ -106,7 +118,7 @@ function download() {
   const blob = new Blob([result.bytes], { type: 'application/octet-stream' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = (ir.name || 'scratch-gpt-project') + '.sb3';
+  a.download = fileNameFor(ir);
   a.click();
   URL.revokeObjectURL(a.href);
 }

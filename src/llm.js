@@ -50,6 +50,7 @@ JSON object, no prose, no markdown fences.
 
 IR shape:
 {
+  "name": "math-quiz-cat",                    // short 3-word kebab-case file name
   "variables": { "score": 0 },              // optional global variables
   "lists": { "queue": [] },                  // optional global lists
   "backdrops": ["Blue Sky"],                 // optional stage backdrops (names)
@@ -80,6 +81,9 @@ Rules:
   sensing_..., etc.). Reporter (round) blocks go in value slots.
 - Use ONLY the opcodes listed below, with their listed input/field names.
 - Keep it runnable: start scripts with a hat (event_whenflagclicked, etc.).
+- "name": a memorable file name for the project — EXACTLY three short words,
+  lowercase, joined by hyphens (e.g. "dancing-ballerina-stage", "math-quiz-cat").
+  No spaces, extensions, or other punctuation. Always include it.
 - Costumes/backdrops/sounds: set "costumes" and "sounds" on a sprite (and
   "backdrops" at the top level) to built-in asset names from the lists below.
   Use the EXACT names as written. Choose costumes that fit the character — a
