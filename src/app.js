@@ -7,40 +7,54 @@ const SETTINGS_KEY = 'scratch-gpt:settings';
 
 const EXAMPLES = {
   dance: {
-    variables: { steps: 0 },
-    sprites: [{
-      name: 'Dancer', x: 0, y: 0,
-      scripts: [[
-        { op: 'event_whenflagclicked' },
-        { op: 'control_forever', body: [
-          { op: 'motion_movesteps', inputs: { STEPS: 10 } },
-          { op: 'motion_ifonedgebounce' },
-          { op: 'control_wait', inputs: { DURATION: 0.2 } },
-          { op: 'data_changevariableby', fields: { VARIABLE: 'steps' }, inputs: { VALUE: 1 } },
-        ] },
-      ]],
-    }],
+    prompt: 'A dancing sprite that moves across the stage forever, bounces off the edges, and counts how many steps it has taken.',
+    ir: {
+      variables: { steps: 0 },
+      sprites: [{
+        name: 'Dancer', x: 0, y: 0,
+        scripts: [[
+          { op: 'event_whenflagclicked' },
+          { op: 'control_forever', body: [
+            { op: 'motion_movesteps', inputs: { STEPS: 10 } },
+            { op: 'motion_ifonedgebounce' },
+            { op: 'control_wait', inputs: { DURATION: 0.2 } },
+            { op: 'data_changevariableby', fields: { VARIABLE: 'steps' }, inputs: { VALUE: 1 } },
+          ] },
+        ]],
+      }],
+    },
   },
   quiz: {
-    variables: { score: 0 },
-    sprites: [{
-      name: 'Cat',
-      scripts: [[
-        { op: 'event_whenflagclicked' },
-        { op: 'data_setvariableto', fields: { VARIABLE: 'score' }, inputs: { VALUE: 0 } },
-        { op: 'sensing_askandwait', inputs: { QUESTION: 'What is 2 + 2?' } },
-        { op: 'control_if_else',
-          inputs: { CONDITION: { op: 'operator_equals', inputs: { OPERAND1: { op: 'sensing_answer' }, OPERAND2: 4 } } },
-          body: [
-            { op: 'data_changevariableby', fields: { VARIABLE: 'score' }, inputs: { VALUE: 1 } },
-            { op: 'looks_sayforsecs', inputs: { MESSAGE: 'Correct!', SECS: 2 } },
-          ],
-          body2: [{ op: 'looks_sayforsecs', inputs: { MESSAGE: 'Try again!', SECS: 2 } }],
-        },
-      ]],
-    }],
+    prompt: 'A math quiz where the cat asks "What is 2 + 2?", adds a point to the score for a correct answer and says "Correct!", otherwise says "Try again!".',
+    ir: {
+      variables: { score: 0 },
+      sprites: [{
+        name: 'Cat',
+        scripts: [[
+          { op: 'event_whenflagclicked' },
+          { op: 'data_setvariableto', fields: { VARIABLE: 'score' }, inputs: { VALUE: 0 } },
+          { op: 'sensing_askandwait', inputs: { QUESTION: 'What is 2 + 2?' } },
+          { op: 'control_if_else',
+            inputs: { CONDITION: { op: 'operator_equals', inputs: { OPERAND1: { op: 'sensing_answer' }, OPERAND2: 4 } } },
+            body: [
+              { op: 'data_changevariableby', fields: { VARIABLE: 'score' }, inputs: { VALUE: 1 } },
+              { op: 'looks_sayforsecs', inputs: { MESSAGE: 'Correct!', SECS: 2 } },
+            ],
+            body2: [{ op: 'looks_sayforsecs', inputs: { MESSAGE: 'Try again!', SECS: 2 } }],
+          },
+        ]],
+      }],
+    },
   },
 };
+
+// Load an example into both panes: its prompt on the left, its compiled IR on the right.
+function loadExample(key) {
+  const ex = EXAMPLES[key];
+  if (!ex) return;
+  $('desc').value = ex.prompt;
+  setIR(JSON.stringify(ex.ir, null, 2));
+}
 
 function loadSettings() {
   try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch { return {}; }
@@ -208,12 +222,12 @@ window.addEventListener('DOMContentLoaded', () => {
   $('btnBuild').addEventListener('click', download);
   $('ir').addEventListener('input', onEditorInput);
   $('ir').addEventListener('scroll', () => { $('gutter').scrollTop = $('ir').scrollTop; });
-  $('exDance').addEventListener('click', () => setIR(JSON.stringify(EXAMPLES.dance, null, 2)));
-  $('exQuiz').addEventListener('click', () => setIR(JSON.stringify(EXAMPLES.quiz, null, 2)));
+  $('exDance').addEventListener('click', () => loadExample('dance'));
+  $('exQuiz').addEventListener('click', () => loadExample('quiz'));
   initSettingsUI();
   initUserChip();
   initDemoBadge();
-  setIR(JSON.stringify(EXAMPLES.dance, null, 2));
+  loadExample('dance');
 
   // Tell the GitHub Pages wrapper we rendered successfully, so it can drop its
   // loading/sign-in overlay. This is a *positive* signal from our own code —
