@@ -7,6 +7,22 @@
 // generation is unavailable — author the IR by hand and the compiler does the rest.
 
 import { CATALOG } from './catalog.js';
+import { COSTUMES, BACKDROPS, SOUNDS } from './scratchlib.js';
+
+// The canonical names of every built-in asset, comma-joined, so the model can
+// pick real ones. The compiler matches these case-insensitively and falls back
+// to a default (costumes/backdrops) or skips (sounds) on any miss.
+export function assetReference() {
+  const names = (lib) => Object.values(lib).map((e) => e.name).join(', ');
+  return `# Costumes (sprite) — ${Object.keys(COSTUMES).length}
+${names(COSTUMES)}
+
+# Backdrops (stage) — ${Object.keys(BACKDROPS).length}
+${names(BACKDROPS)}
+
+# Sounds — ${Object.keys(SOUNDS).length}
+${names(SOUNDS)}`;
+}
 
 // Compact, model-friendly description of every block the compiler understands.
 export function catalogReference() {
@@ -36,9 +52,12 @@ IR shape:
 {
   "variables": { "score": 0 },              // optional global variables
   "lists": { "queue": [] },                  // optional global lists
+  "backdrops": ["Blue Sky"],                 // optional stage backdrops (names)
   "sprites": [
     {
       "name": "Cat", "x": 0, "y": 0,         // x/y/size/direction optional
+      "costumes": ["Cat-a", "Cat-b"],        // optional built-in costume names
+      "sounds": ["Meow"],                     // optional built-in sound names
       "scripts": [                            // array of scripts
         [                                     // a script = array of blocks
           { "op": "event_whenflagclicked" },  // first block is usually a hat
@@ -61,9 +80,19 @@ Rules:
   sensing_..., etc.). Reporter (round) blocks go in value slots.
 - Use ONLY the opcodes listed below, with their listed input/field names.
 - Keep it runnable: start scripts with a hat (event_whenflagclicked, etc.).
+- Costumes/backdrops/sounds: set "costumes" and "sounds" on a sprite (and
+  "backdrops" at the top level) to built-in asset names from the lists below.
+  Use the EXACT names as written. Choose costumes that fit the character — a
+  walking/dancing sprite wants 2+ costumes to alternate with looks_nextcostume.
+  If you omit them, a default costume is used. Costume/sound NAMES go in these
+  arrays only — never as block inputs (e.g. looks_switchcostumeto uses the
+  costume name as its field value).
 
 Available blocks:
-${catalogReference()}`;
+${catalogReference()}
+
+Available built-in assets (use these exact names):
+${assetReference()}`;
 }
 
 function extractJson(text) {

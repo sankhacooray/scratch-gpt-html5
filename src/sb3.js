@@ -29,11 +29,12 @@ function svgAsset(svg, name, rcx, rcy) {
 export function buildProject(ir) {
   const sprite = svgAsset(COSTUME_SVG, 'costume1', 50, 50);
   const backdrop = svgAsset(BACKDROP_SVG, 'backdrop1', 240, 180);
-  const project = compile(normalizeIR(ir), {
-    spriteCostume: sprite.costume,
-    backdropCostume: backdrop.costume,
-  });
+  // Built-in (library) costumes/sounds are referenced by md5ext and resolved
+  // from Scratch's asset CDN on open, so only the bundled defaults need bytes.
+  const opts = { spriteCostume: sprite.costume, backdropCostume: backdrop.costume, warnings: [] };
+  const project = compile(normalizeIR(ir), opts);
   const report = validate(project);
+  report.warnings = report.warnings.concat(opts.warnings);
   return { project, report, assets: [sprite.asset, backdrop.asset] };
 }
 

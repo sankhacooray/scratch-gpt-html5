@@ -21,6 +21,7 @@
 //   a list        -> { list: 'queue' }
 
 import { CATALOG, SHADOW_PRIM } from './catalog.js';
+import { COSTUMES, BACKDROPS, SOUNDS } from './scratchlib.js';
 
 function newId(ctx) { return 'b' + ++ctx.n; }
 
@@ -173,21 +174,77 @@ function compileSequence(ctx, arr, parentId, blocks) {
 }
 
 export function normalizeIR(ir) {
+  // Stage backdrops may be declared at the top level (handy for the common
+  // single-stage case); used only when the IR doesn't supply its own stage.
+  const stage = () => ({ name: 'Stage', isStage: true, scripts: [], backdrops: ir.backdrops });
   let targets;
   if (Array.isArray(ir.targets)) {
     targets = ir.targets.slice();
-    if (!targets.some((t) => t.isStage)) {
-      targets.unshift({ name: 'Stage', isStage: true, scripts: [] });
-    }
+    if (!targets.some((t) => t.isStage)) targets.unshift(stage());
   } else if (Array.isArray(ir.sprites)) {
-    targets = [{ name: 'Stage', isStage: true, scripts: [] }, ...ir.sprites];
+    targets = [stage(), ...ir.sprites];
   } else {
-    targets = [
-      { name: 'Stage', isStage: true, scripts: [] },
-      { name: 'Sprite1', isStage: false, scripts: ir.scripts || [] },
-    ];
+    targets = [stage(), { name: 'Sprite1', isStage: false, scripts: ir.scripts || [] }];
   }
   return { targets, variables: ir.variables || {}, lists: ir.lists || {} };
+}
+
+// Turn a library catalog entry into an .sb3 costume/backdrop object. The bytes
+// aren't bundled — Scratch resolves them from its asset CDN by md5ext on open.
+function costumeFromLib(e) {
+  return {
+    name: e.name,
+    dataFormat: e.dataFormat,
+    assetId: e.assetId,
+    md5ext: e.md5ext,
+    bitmapResolution: e.bitmapResolution,
+    rotationCenterX: e.rotationCenterX,
+    rotationCenterY: e.rotationCenterY,
+  };
+}
+
+function soundFromLib(e) {
+  return {
+    name: e.name,
+    dataFormat: e.dataFormat,
+    assetId: e.assetId,
+    md5ext: e.md5ext,
+    rate: e.rate,
+    sampleCount: e.sampleCount,
+  };
+}
+
+// Resolve a target's costume names against the built-in library. A stage looks
+// in BACKDROPS first, a sprite in COSTUMES first, each falling back to the other
+// set so a name still resolves if it's filed differently. Unknown names warn and
+// are skipped; if nothing resolves, fall back to the bundled default.
+function resolveCostumes(t, isStage, opts) {
+  const names = isStage ? (t.costumes || t.backdrops) : t.costumes;
+  const fallback = isStage ? opts.backdropCostume : opts.spriteCostume;
+  if (!Array.isArray(names) || names.length === 0) return [fallback];
+
+  const primary = isStage ? BACKDROPS : COSTUMES;
+  const secondary = isStage ? COSTUMES : BACKDROPS;
+  const out = [];
+  for (const raw of names) {
+    const key = String(raw).toLowerCase();
+    const e = primary[key] || secondary[key];
+    if (e) out.push(costumeFromLib(e));
+    else opts.warnings.push(`${t.name || 'target'}: unknown ${isStage ? 'backdrop' : 'costume'} "${raw}" — using default`);
+  }
+  return out.length ? out : [fallback];
+}
+
+function resolveSounds(t, opts) {
+  const names = t.sounds;
+  if (!Array.isArray(names) || names.length === 0) return [];
+  const out = [];
+  for (const raw of names) {
+    const e = SOUNDS[String(raw).toLowerCase()];
+    if (e) out.push(soundFromLib(e));
+    else opts.warnings.push(`${t.name || 'target'}: unknown sound "${raw}" — skipped`);
+  }
+  return out;
 }
 
 function makeTarget(t, blocks, opts, layerOrder) {
@@ -201,8 +258,8 @@ function makeTarget(t, blocks, opts, layerOrder) {
     blocks,
     comments: {},
     currentCostume: 0,
-    costumes: [isStage ? opts.backdropCostume : opts.spriteCostume],
-    sounds: [],
+    costumes: resolveCostumes(t, isStage, opts),
+    sounds: resolveSounds(t, opts),
     volume: 100,
     layerOrder,
   };
@@ -231,6 +288,8 @@ function normalizeScripts(t) {
 }
 
 export function compile(normIr, opts) {
+  opts = opts || {};
+  if (!Array.isArray(opts.warnings)) opts.warnings = [];
   const ctx = { n: 0, vars: new Map(), broadcasts: new Map(), lists: new Map() };
 
   for (const [name, init] of Object.entries(normIr.variables || {})) {

@@ -7,16 +7,20 @@ const SETTINGS_KEY = 'scratch-gpt:settings';
 
 const EXAMPLES = {
   dance: {
-    prompt: 'A dancing sprite that moves across the stage forever, bounces off the edges, and counts how many steps it has taken.',
+    prompt: 'A ballerina on a theater stage that dances across the stage forever, bounces off the edges, switches between her dance poses, and counts how many steps she has taken.',
     ir: {
       variables: { steps: 0 },
+      backdrops: ['Theater'],
       sprites: [{
         name: 'Dancer', x: 0, y: 0,
+        costumes: ['Ballerina-a', 'Ballerina-b', 'Ballerina-c', 'Ballerina-d'],
+        sounds: ['Dance Around'],
         scripts: [[
           { op: 'event_whenflagclicked' },
           { op: 'control_forever', body: [
             { op: 'motion_movesteps', inputs: { STEPS: 10 } },
             { op: 'motion_ifonedgebounce' },
+            { op: 'looks_nextcostume' },
             { op: 'control_wait', inputs: { DURATION: 0.2 } },
             { op: 'data_changevariableby', fields: { VARIABLE: 'steps' }, inputs: { VALUE: 1 } },
           ] },
@@ -30,6 +34,8 @@ const EXAMPLES = {
       variables: { score: 0 },
       sprites: [{
         name: 'Cat',
+        costumes: ['Cat-a', 'Cat-b'],
+        sounds: ['Meow'],
         scripts: [[
           { op: 'event_whenflagclicked' },
           { op: 'data_setvariableto', fields: { VARIABLE: 'score' }, inputs: { VALUE: 0 } },
