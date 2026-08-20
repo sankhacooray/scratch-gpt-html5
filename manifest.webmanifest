@@ -1,0 +1,17 @@
+{
+  "name": "Scratch GPT",
+  "short_name": "Scratch GPT",
+  "description": "Describe a program in plain English and get a valid Scratch (.sb3) project.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#4c97ff",
+  "background_color": "#e8f1fc",
+  "lang": "en",
+  "categories": ["education", "developer", "productivity"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
