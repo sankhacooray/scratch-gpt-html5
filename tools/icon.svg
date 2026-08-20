@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5ba4ff"/>
+      <stop offset="1" stop-color="#4c97ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#g)"/>
+  <!-- stacked scratch-style blocks inside the maskable safe zone (~center 60%) -->
+  <g>
+    <rect x="150" y="168" width="212" height="52" rx="14" fill="#ffffff"/>
+    <rect x="176" y="230" width="186" height="52" rx="14" fill="#ffab19"/>
+    <rect x="176" y="292" width="160" height="52" rx="14" fill="#ffffff"/>
+  </g>
+</svg>

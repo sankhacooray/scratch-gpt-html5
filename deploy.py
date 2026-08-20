@@ -15,7 +15,15 @@ import sys
 import tempfile
 
 REPO_DIR = os.path.dirname(os.path.abspath(__file__))
-SITE_FILES = ["index.html", "CNAME"]
+SITE_FILES = [
+    "index.html",
+    "CNAME",
+    "manifest.webmanifest",
+    "og-image.png",
+    "icon-192.png",
+    "icon-512.png",
+    "apple-touch-icon.png",
+]
 BRANCH = "gh-pages"
 
 
