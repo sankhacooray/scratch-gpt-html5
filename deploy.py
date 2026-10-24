@@ -23,6 +23,8 @@ SITE_FILES = [
     "icon-192.png",
     "icon-512.png",
     "apple-touch-icon.png",
+    "icon.svg",
+    "icon-maskable-512.png",
 ]
 BRANCH = "gh-pages"
 
