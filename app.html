@@ -5,8 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Scratch GPT</title>
   <script>
-    // Apply saved theme before paint (light by default, like Scratch) to avoid a flash.
-    try { if (localStorage.getItem('scratch-gpt:theme') === 'dark') document.documentElement.classList.add('dark'); } catch (e) {}
+    // Apply a saved theme choice before paint to avoid a flash. With no saved
+    // choice the page follows the system setting (prefers-color-scheme).
+    try {
+      var t = localStorage.getItem('scratch-gpt:theme');
+      if (t === 'dark' || t === 'light') document.documentElement.classList.add(t);
+    } catch (e) {}
   </script>
   <link rel="icon" href="https://scratch.mit.edu/favicon.ico" />
   <link rel="stylesheet"
@@ -37,7 +41,32 @@
       --zebra-b: #e8f1fc;
       --shadow: 0 1px 3px rgba(76, 151, 255, 0.18);
     }
-    /* Dark theme — built from the same Scratch palette on a navy base */
+    /* Dark theme — built from the same Scratch palette on a navy base.
+       Follows the system setting unless the switch picked a theme. */
+    @media (prefers-color-scheme: dark) {
+      html:not(.light) {
+        --bg: #141d33;
+        --panel: #1e2a47;
+        --ink: #eef2fb;
+        --muted: #9aa6c2;
+        --accent: #ffab19;
+        --accent2: #4c97ff;
+        --ok: #4cbf56;
+        --bad: #ff6680;
+        --warn: #ffc04d;
+        --line: #2f3e5e;
+        --input-bg: #131c30;
+        --alt-bg: #2f3e5e;
+        --alt-ink: #eef2fb;
+        --bar-bg: #11192c;
+        --bar-ink: #eef2fb;
+        --code-bg: #131c30;
+        --gutter-bg: #16223a;
+        --zebra-a: #131c30;
+        --zebra-b: #18233c;
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+    }
     html.dark {
       --bg: #141d33;
       --panel: #1e2a47;
@@ -61,10 +90,15 @@
       --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
     }
     * { box-sizing: border-box; }
+    /* No overscroll bounce: the page scrolls inside <body>, and the root
+       background matches the page so no white edge shows. */
+    html { height: 100%; overflow: hidden; background: var(--bg); overscroll-behavior: none; }
     body { margin: 0; font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-      background: var(--bg); color: var(--ink); transition: background 0.2s, color 0.2s; }
-    header { padding: 14px 24px; background: var(--bar-bg); color: var(--bar-ink);
-      display: flex; align-items: center; gap: 12px; }
+      background: var(--bg); color: var(--ink); transition: background 0.2s, color 0.2s;
+      height: 100%; overflow-y: auto; overflow-x: hidden; overscroll-behavior: none;
+      display: flex; flex-direction: column; }
+    header { padding: 12px 24px; background: var(--bar-bg); color: var(--bar-ink); flex: none;
+      display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10; }
     header h1 { margin: 0; font-size: 20px; display: flex; align-items: baseline; gap: 6px; }
     header h1 .gpt { color: var(--accent); }
     header h1 .demo { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
@@ -79,14 +113,33 @@
     .bar-btn:hover { background: rgba(255,255,255,0.28); }
     .bar-btn img { width: 18px; height: 18px; display: block; }
     .bar-btn.icon-only { padding: 7px 10px; }
+    /* Theme switch shows the NEXT theme: a moon in light, a sun in dark. Picked
+       in CSS from the active theme so it is right on first paint. */
+    #btnTheme .fa-sun { display: none; }
+    html.dark #btnTheme .fa-sun { display: inline-block; }
+    html.dark #btnTheme .fa-moon { display: none; }
+    @media (prefers-color-scheme: dark) {
+      html:not(.light) #btnTheme .fa-sun { display: inline-block; }
+      html:not(.light) #btnTheme .fa-moon { display: none; }
+    }
+    /* The one primary CTA: solid Scratch orange, lighter + glow on hover, never moves. */
+    .bar-cta { display: inline-flex; align-items: center; gap: 8px; background: var(--accent); color: #21232b;
+      border: 0; border-radius: 999px; padding: 9px 18px; font-weight: 700; font-size: 14px; line-height: 1;
+      cursor: pointer; white-space: nowrap; box-shadow: 0 2px 10px rgba(255,171,25,0.35);
+      transition: background-color .15s, box-shadow .15s; }
+    .bar-cta:hover { filter: none; background: #ffbd45; box-shadow: 0 4px 18px rgba(255,171,25,0.55); }
+    .bar-cta .short { display: none; }
     .user-chip { display: inline-flex; align-items: center; gap: 7px; color: var(--bar-ink); font-size: 13px; font-weight: 600;
       background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.32); border-radius: 999px; padding: 5px 12px; }
     .user-chip[hidden] { display: none; }
     .user-chip span { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    main { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px 24px; }
-    .col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+    /* Tool view fits the screen below the app bar: no page scroll on laptops.
+       The IR editor takes the leftover height and scrolls inside itself. */
+    main { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px 24px;
+      flex: 1 1 auto; min-height: 0; grid-template-rows: minmax(0, 1fr); }
+    .col { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
     .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; box-shadow: var(--shadow); }
-    .card.fill { flex: 1; display: flex; flex-direction: column; }
+    .card.fill { flex: 1; display: flex; flex-direction: column; min-height: 0; }
     label { display: block; font-weight: 600; margin-bottom: 6px; }
     .hint { color: var(--muted); font-size: 12px; margin: 0 0 8px; }
     textarea { width: 100%; background: var(--input-bg); color: var(--ink); border: 1px solid var(--line);
@@ -99,7 +152,7 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
     .chips-label { color: var(--muted); font-size: 12px; font-weight: 600; align-self: center; }
     /* Code editor with a line-number gutter and zebra-striped rows */
-    .editor { display: flex; height: 420px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--input-bg);
+    .editor { display: flex; flex: 1 1 auto; min-height: 260px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--input-bg);
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
     .editor .gutter { flex: 0 0 auto; min-width: 42px; overflow: hidden; text-align: right; color: var(--muted);
       background: var(--gutter-bg); border-right: 1px solid var(--line); user-select: none; }
@@ -139,7 +192,24 @@
     .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
     .modal-head h2 { margin: 0; font-size: 17px; }
     .modal-x { background: var(--alt-bg); color: var(--alt-ink); padding: 6px 10px; }
-    @media (max-width: 860px) { main { grid-template-columns: 1fr; } header .tag { display: none; } }
+    @media (min-width: 861px) and (min-height: 560px) {
+      .editor { min-height: 0; }
+    }
+    @media (max-width: 1100px) { header .tag { display: none; } }
+    @media (max-width: 860px) {
+      main { grid-template-columns: 1fr; grid-template-rows: none; padding: 12px 16px; }
+      header { padding: 10px 16px; gap: 8px; }
+      .user-chip, .bar-btn.open-scratch span { display: none; }
+      .bar-cta .long { display: none; }
+      .bar-cta .short { display: inline; }
+      .bar-cta { padding: 9px 14px; }
+      .editor { height: 380px; flex: none; }
+    }
+    @media (max-width: 420px) {
+      header h1 { font-size: 17px; white-space: nowrap; }
+      header h1 .demo { display: none; }
+      .bar-btn.open-scratch { display: none; }
+    }
   </style>
 </head>
 <body>
@@ -150,15 +220,18 @@
     <span id="userChip" class="user-chip" hidden>
       <i class="fa-solid fa-circle-user"></i><span id="userEmail"></span>
     </span>
-    <a class="bar-btn" href="https://scratch.mit.edu/projects/editor/" target="_blank" rel="noopener" title="Open the Scratch editor">
+    <a class="bar-btn open-scratch" href="https://scratch.mit.edu/projects/editor/" target="_blank" rel="noopener" title="Open the Scratch editor">
       <img src="https://scratch.mit.edu/favicon.ico" alt="Scratch" />
       <span>Open Scratch</span>
     </a>
     <button id="btnSettings" class="bar-btn icon-only" title="Settings (API key)" aria-label="Settings">
       <i class="fa-solid fa-gear"></i>
     </button>
-    <button id="btnTheme" class="bar-btn icon-only" title="Toggle light / dark theme" aria-label="Toggle theme">
-      <i class="fa-solid fa-moon"></i>
+    <button id="btnTheme" class="bar-btn icon-only" title="Switch to dark theme" aria-label="Switch to dark theme">
+      <i class="fa-solid fa-moon"></i><i class="fa-solid fa-sun"></i>
+    </button>
+    <button id="btnBuild" class="bar-cta" title="Build the IR into a Scratch .sb3 file and download it">
+      <i class="fa-solid fa-download"></i><span class="long">Download Scratch project</span><span class="short">Download</span>
     </button>
   </header>
 
@@ -176,22 +249,21 @@
           </div>
         </div>
         <div class="row" style="margin-top:10px">
-          <button id="btnGenerate" class="primary"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate IR</button>
+          <button id="btnGenerate"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate IR</button>
           <span class="hint" style="margin:0">uses your configured AI provider</span>
         </div>
       </div>
     </div>
 
     <div class="col">
-      <div class="card">
+      <div class="card fill">
         <label for="ir">IR (intermediate representation)</label>
-        <p class="hint">The deterministic compiler turns this into a valid Scratch project. Edit freely — it validates as you type.</p>
+        <p class="hint">The deterministic compiler turns this into a valid Scratch project. Edit freely — it validates as you type. <b>Download Scratch project</b> (top right) builds it into an <code>.sb3</code>.</p>
         <div class="editor">
           <div class="gutter" id="gutter" aria-hidden="true"></div>
           <textarea id="ir" spellcheck="false" wrap="off"></textarea>
         </div>
         <div class="row" style="margin-top:10px">
-          <button id="btnBuild" class="primary"><i class="fa-solid fa-download"></i> Build &amp; Download .sb3</button>
           <div id="report"></div>
         </div>
       </div>
@@ -224,20 +296,30 @@
   </div>
 
   <script>
-    // Theme toggle: light by default (matches Scratch). Choice persists in localStorage.
+    // Theme switch. Follows the system theme until the user picks one; the
+    // choice persists in localStorage. The button shows the NEXT theme.
     (function () {
       var KEY = 'scratch-gpt:theme';
       var root = document.documentElement;
-      function syncIcon() {
-        var icon = document.querySelector('#btnTheme i');
-        if (icon) icon.className = root.classList.contains('dark') ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+      var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+      var btn = document.getElementById('btnTheme');
+      function isDark() {
+        if (root.classList.contains('dark')) return true;
+        if (root.classList.contains('light')) return false;
+        return !!(mq && mq.matches);
       }
-      syncIcon();
-      document.getElementById('btnTheme').addEventListener('click', function () {
-        var dark = !root.classList.contains('dark');
-        root.classList.toggle('dark', dark);
-        try { localStorage.setItem(KEY, dark ? 'dark' : 'light'); } catch (e) {}
-        syncIcon();
+      function syncLabel() {
+        var label = isDark() ? 'Switch to light theme' : 'Switch to dark theme';
+        btn.title = label; btn.setAttribute('aria-label', label);
+      }
+      syncLabel();
+      if (mq && mq.addEventListener) mq.addEventListener('change', syncLabel);
+      btn.addEventListener('click', function () {
+        var next = isDark() ? 'light' : 'dark';
+        root.classList.remove('dark', 'light');
+        root.classList.add(next);
+        try { localStorage.setItem(KEY, next); } catch (e) {}
+        syncLabel();
       });
     })();
   </script>

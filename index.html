@@ -35,10 +35,23 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Scratch GPT" />
+  <script>
+    // Saved theme choice applies before first paint; otherwise follow the system.
+    try { var t = localStorage.getItem('sc-theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  </script>
   <style>
-    :root { --blue: #4c97ff; --ink: #575e75; --bg: #e8f1fc; }
+    :root { --blue: #4c97ff; --ink: #575e75; --bg: #e8f1fc; --panel: #ffffff; --line: #d9e3f2; --muted: #8a93a8;
+      --note: #9aa6c2; --track: #cfe0fb; --glow: rgba(76,151,255,0.18); color-scheme: light; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --ink: #eef2fb; --bg: #141d33; --panel: #1e2a47; --line: #2f3e5e; --muted: #9aa6c2;
+        --note: #7f8bab; --track: #2f3e5e; --glow: rgba(0,0,0,0.4); color-scheme: dark; }
+    }
+    :root[data-theme="dark"] { --ink: #eef2fb; --bg: #141d33; --panel: #1e2a47; --line: #2f3e5e; --muted: #9aa6c2;
+      --note: #7f8bab; --track: #2f3e5e; --glow: rgba(0,0,0,0.4); color-scheme: dark; }
     * { box-sizing: border-box; }
-    html, body { margin: 0; height: 100%; }
+    /* No overscroll bounce, no white edge. */
+    html { height: 100%; overflow: hidden; background: var(--bg); overscroll-behavior: none; }
+    body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; }
     body { background: var(--bg); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; color: var(--ink); }
 
     /* The embedded Apps Script app fills the viewport. */
@@ -50,19 +63,32 @@
     #gate { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px;
       background: var(--bg); transition: opacity 0.3s; }
     #gate.hidden { opacity: 0; pointer-events: none; }
-    .card { max-width: 420px; text-align: center; background: #fff; border: 1px solid #d9e3f2;
-      border-radius: 16px; padding: 28px 26px; box-shadow: 0 8px 30px rgba(76,151,255,0.18); }
+    .card { position: relative; max-width: 420px; text-align: center; background: var(--panel); border: 1px solid var(--line);
+      border-radius: 16px; padding: 28px 26px; box-shadow: 0 8px 30px var(--glow); }
     .card img { width: 56px; height: 56px; }
     h1 { margin: 12px 0 4px; font-size: 22px; color: var(--ink); }
     h1 .gpt { color: #ffab19; }
-    .sub { margin: 0 0 18px; color: #8a93a8; font-size: 13.5px; }
+    .sub { margin: 0 0 18px; color: var(--muted); font-size: 13.5px; }
     .btn { display: inline-block; background: var(--blue); color: #fff; text-decoration: none; font-weight: 700;
       padding: 11px 20px; border-radius: 10px; font-size: 15px; }
-    .btn:hover { filter: brightness(1.06); }
-    .spinner { width: 22px; height: 22px; margin: 6px auto 14px; border: 3px solid #cfe0fb; border-right-color: var(--blue);
+    .btn:hover { filter: brightness(1.08); box-shadow: 0 4px 16px rgba(76,151,255,0.45); }
+    .spinner { width: 22px; height: 22px; margin: 6px auto 14px; border: 3px solid var(--track); border-right-color: var(--blue);
       border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .note { margin-top: 14px; font-size: 12px; color: #9aa6c2; }
+    .note { margin-top: 14px; font-size: 12px; color: var(--note); }
+    /* Theme switch: shows the NEXT theme (moon in light, sun in dark). */
+    .theme { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: 50%;
+      display: grid; place-items: center; background: transparent; border: 1px solid var(--line); color: var(--ink);
+      cursor: pointer; transition: background-color .15s; }
+    .theme:hover { background: var(--bg); }
+    .theme svg { width: 16px; height: 16px; }
+    .theme .sun { display: none; }
+    :root[data-theme="dark"] .theme .sun { display: block; }
+    :root[data-theme="dark"] .theme .moon { display: none; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) .theme .sun { display: block; }
+      :root:not([data-theme="light"]) .theme .moon { display: none; }
+    }
     .loading-only .ready { display: none; }
     .ready-only .loading { display: none; }
   </style>
@@ -75,6 +101,10 @@
 
   <div id="gate" class="loading-only">
     <div class="card">
+      <button class="theme" id="theme" type="button" aria-label="Switch to dark theme" title="Switch to dark theme">
+        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
       <img src="https://scratch.mit.edu/favicon.ico" alt="Scratch" />
       <h1>Scratch <span class="gpt">GPT</span></h1>
       <div class="loading">
@@ -92,6 +122,20 @@
   </div>
 
   <script>
+    (function () {
+      var root = document.documentElement, btn = document.getElementById('theme');
+      var mq = window.matchMedia('(prefers-color-scheme: dark)');
+      function dark() { var t = root.getAttribute('data-theme'); return t ? t === 'dark' : mq.matches; }
+      function label() { var l = dark() ? 'Switch to light theme' : 'Switch to dark theme'; btn.title = l; btn.setAttribute('aria-label', l); }
+      label();
+      if (mq.addEventListener) mq.addEventListener('change', label);
+      btn.addEventListener('click', function () {
+        var next = dark() ? 'light' : 'dark';
+        root.setAttribute('data-theme', next);
+        try { localStorage.setItem('sc-theme', next); } catch (e) {}
+        label();
+      });
+    })();
     var gate = document.getElementById('gate');
     // Drop the overlay ONLY when the embedded app posts its "ready" signal.
     // We can't use the iframe's `load` event: it also fires for Google's
